@@ -1,0 +1,14 @@
+ Extracting INI settings from site packages
+*********************************************
+
+Manual setups require the same template override settings.
+
+Site packages define override settings in specific PHP functions, which can be extracted to INI files by this script.
+
+Examples:
+
+Admin override settings:
+> php sitepackageiniextract.php --debug=all var/storage/packages/ez_systems/ezwebin_site/settings/ini-admin.php eZSiteAdminOverrideINISettings iniextract/admin
+
+User site access override settings:
+> php sitepackageiniextract.php --debug=all var/storage/packages/ez_systems/ezwebin_site/settings/ini-site.php eZSiteOverrideINISettings iniextract/site
