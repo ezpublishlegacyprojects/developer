@@ -24,21 +24,20 @@
 // ## END COPYRIGHT, LICENSE AND WARRANTY NOTICE ##
 //
 
-$Module =& $Params['Module'];
-$moduleInfo =& $Module->attribute( 'info' );
-$moduleName =& $Params['ModuleName'];
-$functionName =& $Params['FunctionName'];
+$Module = $Params['Module'];
+$moduleInfo = $Module->attribute( 'info' );
+$moduleName = $Params['ModuleName'];
+$functionName = $Params['FunctionName'];
 $UserParameters = isset( $Params['UserParameters'] ) ? $Params['UserParameters'] : array();
 
-include_once( 'lib/ezutils/classes/ezini.php' );
-$devIni =& eZINI::instance( 'developer.ini' );
+$devIni = eZINI::instance( 'developer.ini' );
 $maxLimit = 50;
 if ( $devIni->hasVariable( 'TreeFetchBuilder', 'MaxLimit' ) )
 {
     $maxLimit = $devIni->variable( 'TreeFetchBuilder', 'MaxLimit' );
 }
 
-include_once( 'kernel/common/template.php' );
+require_once( 'kernel/common/template.php' );
 
 // default values
 $sessionParameters = array( );
@@ -49,6 +48,7 @@ $sessionParameters['Depth'] = '';
 $sessionParameters['DepthOperator'] = 'eq';
 $sessionParameters['IgnoreVisibility'] = false;
 $sessionParameters['MainNodeOnly'] = false;
+$sessionParameters['LoadDataMap'] = false;
 $sessionParameters['OnlyTranslated'] = false;
 $sessionParameters['Limitation'] = false;
 $sessionParameters['ClassFilterType'] = 'include';
@@ -111,10 +111,9 @@ function phpToTemplateCode( $value, $currentIndentLength = 0, $startNewLine = fa
     return $tplCode;
 }
 
-$tpl =& templateInit();
+$tpl = templateInit();
 
-include_once( 'lib/ezutils/classes/ezhttptool.php' );
-$http = &eZHTTPTool::instance( );
+$http = eZHTTPTool::instance( );
 
 if ( $Module->isCurrentAction( 'Update' ) or $Module->isCurrentAction( 'AddSortingElement' ) or $Module->isCurrentAction( 'RemoveSelectedSorting' ) )
 {
@@ -132,7 +131,7 @@ if ( $Module->isCurrentAction( 'Update' ) or $Module->isCurrentAction( 'AddSorti
     }
 
     // boolean switches
-    foreach ( array( 'IgnoreVisibility', 'MainNodeOnly', 'OnlyTranslated' ) as $actionParam )
+    foreach ( array( 'IgnoreVisibility', 'MainNodeOnly', 'OnlyTranslated', 'LoadDataMap' ) as $actionParam )
     {
          if ( $Module->hasActionParameter( $actionParam ) )
         {
@@ -190,7 +189,7 @@ else
     // restore session variables
     if ( $http->hasSessionVariable( 'FetchTreeBuilder' ) )
     {
-        $sessionParameters =& $http->sessionVariable( 'FetchTreeBuilder' );
+        $sessionParameters = $http->sessionVariable( 'FetchTreeBuilder' );
     }
 }
 
@@ -245,6 +244,10 @@ if ( $sessionParameters['MainNodeOnly'] )
 {
     $phpFetchParams['MainNodeOnly'] = true;
 }
+
+// default value of this option differs between the template fetch function and the static PHP method
+// so we always add it to avoid any confusion
+$phpFetchParams['LoadDataMap'] = $sessionParameters['LoadDataMap'];
 
 if ( $sessionParameters['IgnoreVisibility'] )
 {
@@ -332,25 +335,22 @@ if ( count( $_POST ) == 0 )
 
 $phpFetchParams['Offset'] = $sessionParameters['Offset'];
 
-include_once( 'kernel/classes/ezpreferences.php' );
-
 // only fetch results when necessary
 if ( eZPreferences::value( 'developer_treefetchbuilder_navigation_results' ) == 1 )
 {
     // fetching count
-    include_once( 'kernel/classes/ezcontentobjecttreenode.php' );
-    $resultCount =& eZContentObjectTreeNode::subTreeCount( $phpCountFetchParams, $sessionParameters['ParentNodeID'] );
+    $resultCount = eZContentObjectTreeNode::subTreeCountByNodeID( $phpCountFetchParams, $sessionParameters['ParentNodeID'] );
     $tpl->setVariable( 'resultCount', $resultCount );
 
     // fetching result set for current page
-    $results =& eZContentObjectTreeNode::subTree( $phpFetchParams, $sessionParameters['ParentNodeID'] );
+    $results = eZContentObjectTreeNode::subTreeByNodeID( $phpFetchParams, $sessionParameters['ParentNodeID'] );
     $tpl->setVariable( 'results', $results );
 }
 
 // only set PHP code when necessary
 if ( eZPreferences::value( 'developer_treefetchbuilder_navigation_php' ) == 1 )
 {
-    $phpCode = '$nodes =& eZContentObjectTreeNode::subTree( ' . var_export( $phpFetchParams, true ) . ', ' . $sessionParameters['ParentNodeID'] .' );';
+    $phpCode = '$nodes = eZContentObjectTreeNode::subTreeByNodeID( ' . var_export( $phpFetchParams, true ) . ', ' . $sessionParameters['ParentNodeID'] .' );';
     $tpl->setVariable( 'phpCode', $phpCode );
 }
 
@@ -385,6 +385,7 @@ $tpl->setVariable( 'offset', $sessionParameters['Offset'] );
 $tpl->setVariable( 'limit', $sessionParameters['Limit'] );
 $tpl->setVariable( 'ignoreVisibility', $sessionParameters['IgnoreVisibility'] );
 $tpl->setVariable( 'mainNodeOnly', $sessionParameters['MainNodeOnly'] );
+$tpl->setVariable( 'loadDataMap', $sessionParameters['LoadDataMap'] );
 $tpl->setVariable( 'onlyTranslated', $sessionParameters['OnlyTranslated'] );
 $tpl->setVariable( 'emptyLimitation', is_array( $sessionParameters['Limitation'] ) );
 $tpl->setVariable( 'classFilterType', $sessionParameters['ClassFilterType'] );
@@ -395,18 +396,8 @@ $tpl->setVariable( 'depthOperator', $sessionParameters['DepthOperator'] );
 $tpl->setVariable( 'language', $sessionParameters['Language'] );
 $tpl->setVariable( 'warnings', $warnings );
 
-include_once( 'lib/version.php' );
 $languageList = array();
-if ( version_compare( eZPublishSDK::version(), '3.8' ) === -1 )
-{
-    include_once( 'kernel/classes/ezcontenttranslation.php' );
-    $languages = eZContentTranslation::fetchList();
-}
-else
-{
-    include_once( 'kernel/classes/ezcontentlanguage.php' );
-    $languages = eZContentLanguage::fetchList();
-}
+$languages = eZContentLanguage::fetchList();
 
 foreach ( $languages as $lang )
 {
@@ -419,7 +410,7 @@ $tpl->setVariable( 'view_parameters', $viewParameters );
 
 $Result = array();
 $Result['left_menu'] = 'design:parts/developer/menu.tpl';
-$Result['content'] =& $tpl->fetch( "design:$moduleName/$functionName.tpl" );
+$Result['content'] = $tpl->fetch( "design:$moduleName/$functionName.tpl" );
 $Result['path'] = array( array( 'url' => false, 'text' => $moduleInfo['name'] ),
                          array( 'url' => false, 'text' => 'Tree Fetch Builder' )
                        );

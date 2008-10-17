@@ -19,6 +19,7 @@
     optionArray = new Array( );
     valueArray = new Array( );
 
+    {cache-block}
     {foreach $classes as $class}
         optionArray['{$class.identifier}'] = new Array( );
         valueArray['{$class.identifier}'] = new Array( );
@@ -29,6 +30,7 @@
         {/foreach}
         {/let}
     {/foreach}
+    {/cache-block}
 
 
     {literal}
@@ -156,6 +158,7 @@ function removeAllOptions( selectid )
         <input type="checkbox" {if $mainNodeOnly}checked="checked"{/if} name="MainNodeOnly" />{'Main node only'|i18n('extension/developer/treefetchbuilder')}
         <input type="checkbox" {if $onlyTranslated}checked="checked"{/if} name="OnlyTranslated" />{'Only translated'|i18n('extension/developer/treefetchbuilder')}
         <input type="checkbox" {if $emptyLimitation}checked="checked"{/if} name="EmptyLimitation" />{'Empty limitation array (ignore policies)'|i18n('extension/developer/treefetchbuilder')}
+        <input type="checkbox" {if $loadDataMap}checked="checked"{/if} name="LoadDataMap" />{'Load data map'|i18n('extension/developer/treefetchbuilder')}
     </div>
 
     <fieldset>

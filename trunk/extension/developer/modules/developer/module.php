@@ -33,6 +33,7 @@ $updateParameterArray = array(
             'MainNodeOnly' => 'MainNodeOnly',
             'OnlyTranslated' => 'OnlyTranslated',
             'EmptyLimitation' => 'EmptyLimitation',
+            'LoadDataMap' => 'LoadDataMap',
             'ClassFilterType' => 'ClassFilterType',
             'ClassFilterArray' => 'ClassFilterArray',
             'SortingElementsMethod' => 'SortingElementsMethod',
