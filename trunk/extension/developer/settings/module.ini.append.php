@@ -2,5 +2,6 @@
 
 [ModuleSettings]
 ExtensionRepositories[]=developer
+ModuleList[]=developer
 
 */ ?>
